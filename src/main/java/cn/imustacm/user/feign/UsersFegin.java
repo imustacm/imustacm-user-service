@@ -12,9 +12,6 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -40,7 +37,7 @@ public class UsersFegin implements IUsersService {
         redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
 
         String yy = this.getClass().getClassLoader().getResource("").getPath();
-        String path = yy + "/cn/imustacm/user/utils/new_words.txt";
+        String path = yy + "/files/new_words.txt";
         JSONObject returnJson = ImageCodeUtils.getImage(path);
         String word = returnJson.getString("word");
         String base64Img = returnJson.getString("base64Img");
