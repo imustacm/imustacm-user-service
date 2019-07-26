@@ -8,6 +8,19 @@ spring:
       password: password
       driver-class-name: org.postgresql.Driver
 
+  redis:
+    database: number
+    host: url
+    port: port
+    password: password
+    timeout: 360s
+    jedis:
+      pool:
+        max-wait: 360s
+        max-active: 1
+        max-idle: 1
+        min-idle: 1
+
 mybatis-plus:
   global-config:
     db-config:
