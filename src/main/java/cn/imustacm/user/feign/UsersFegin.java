@@ -36,8 +36,7 @@ public class UsersFegin implements IUsersService {
     }
 
     @Override
-    public JSONObject getImage(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        request.setCharacterEncoding("UTF-8");
+    public JSONObject getVerification() {
         redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
 
         String yy = this.getClass().getClassLoader().getResource("").getPath();
