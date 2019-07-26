@@ -89,7 +89,6 @@ public class ImageCodeUtils {
             graphics.drawLine(x1, y1, x1 + x2, x2 + y2);
         }
 
-        // 将上面图片输出到浏览器 ImageIO
         graphics.dispose();// 释放资源
         String base64Img = encodeToString(bufferedImage);
 
