@@ -17,7 +17,7 @@ import java.util.Random;
 
 public class ImageCodeUtils {
 
-    public static JSONObject getImage(String path) throws IOException {
+    public static JSONObject getImage(String path) {
         // 集合中所有验证码文字
         List<String> words = new ArrayList<String>();
 
@@ -106,7 +106,7 @@ public class ImageCodeUtils {
      * @param image
      * @return imageString
      */
-    public static String encodeToString(BufferedImage image) throws IOException {
+    public static String encodeToString(BufferedImage image) {
         String imageString = null;
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try {
