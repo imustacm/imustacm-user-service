@@ -11,7 +11,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>imustacm-user-service</artifactId>
-
+    <properties>
+        <imustacm-user-api>1.0.0</imustacm-user-api>
+        <imustacm-common>1.0.0</imustacm-common>
+    </properties>
     <dependencies>
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -50,7 +53,12 @@
         <dependency>
             <groupId>cn.imustacm</groupId>
             <artifactId>imustacm-user-api</artifactId>
-            <version>1.0.0</version>
+            <version>${imustacm-user-api}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.imustacm</groupId>
+            <artifactId>imustacm-common</artifactId>
+            <version>${imustacm-common}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
