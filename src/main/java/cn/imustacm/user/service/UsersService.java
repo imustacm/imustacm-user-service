@@ -17,11 +17,19 @@ import java.util.List;
 public interface UsersService extends IService<Users> {
 
     /**
-     * 分页查询用户信心
+     * 分页查询用户信息
      *
      * @param pageIndex
      * @param pageSize
      * @return
      */
     Page<Users> getList(Integer pageIndex, Integer pageSize);
+
+    /**
+     * 根据用户名查询用户信息
+     *
+     * @param username
+     * @return
+     */
+    Users getByUsername(String username);
 }
