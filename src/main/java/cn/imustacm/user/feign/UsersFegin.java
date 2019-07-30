@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static cn.imustacm.common.consts.DatePatternConst.DATE_TIME_FORMATTER;
-import static cn.imustacm.common.consts.DatePatternConst.DATE_TIME_PATTERN;
 
 @RestController
 public class UsersFegin implements IUsersService {
