@@ -33,4 +33,11 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         LambdaQueryWrapper<Users> wrapper = new QueryWrapper<Users>().lambda().orderByAsc(Users::getId);
         return (Page<Users>) page(new Page<>(pageIndex, pageSize), wrapper);
     }
+
+    @Override
+    public Users getByUsername(String username) {
+        LambdaQueryWrapper<Users> wrapper = new QueryWrapper<Users>().lambda().eq(Users::getUsername, username);
+        Users users = getOne(wrapper);
+        return users;
+    }
 }
