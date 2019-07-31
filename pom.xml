@@ -72,7 +72,12 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-core</artifactId>
-            <version>4.1.1.RELEASE</version>
+            <version>4.1.5.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>3.4.1</version>
         </dependency>
     </dependencies>
 
