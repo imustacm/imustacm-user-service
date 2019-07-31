@@ -12,6 +12,7 @@ import cn.imustacm.user.utils.Captcha;
 import cn.imustacm.user.utils.GifCaptcha;
 import cn.imustacm.user.utils.RedisUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -61,7 +62,7 @@ public class UsersFegin implements IUsersService {
             return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
         if(registerDTO.getCaptchaValue() == null || "".equals(registerDTO.getCaptchaValue()))
             return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EMPTY);
-        if(!img.toString().equals(registerDTO.getCaptchaValue()))
+        if(!img.toString().equals(registerDTO.getCaptchaValue().toLowerCase()))
             return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_ERROR);
         if(registerDTO.getUsername() == null || "".equals(registerDTO.getUsername()))
             return Resp.fail(ErrorCodeEnum.USER_USERNAME_EMPTY);
@@ -106,11 +107,12 @@ public class UsersFegin implements IUsersService {
         Captcha captcha = new GifCaptcha(146, 33, 4);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         String base64 = captcha.out(bos);
+        byte[] bytes = Base64.decode(base64);
         String word = captcha.text().toLowerCase();
         String uuid = UUID.randomUUID().toString().replaceAll("-", "");
         String key = "Code:" + uuid;
         redisTemplate.opsForValue().set(key, word, 300, TimeUnit.SECONDS);
-        return Resp.ok(CaptchaDTO.builder().key(uuid).value(base64).build());
+        return Resp.ok(CaptchaDTO.builder().key(uuid).value(bytes).build());
     }
 
     @Override
