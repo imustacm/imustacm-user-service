@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: imust-user-service
+  datasource:
+    druid:
+      url: jdbc:postgresql://[host]:[port]/[database]?useUnicode=true&characterEncoding=UTF-8
+      username: [username]
+      password: [password]
+      driver-class-name: org.postgresql.Driver
+
+  redis:
+    database: [database]
+    host: [host]
+    port: [port]
+    password: [password]
+    timeout: 30s
+    jedis:
+      pool:
+        max-wait: 30s
+        max-active: 1
+        max-idle: 1
+        min-idle: 1
+
+mybatis-plus:
+  global-config:
+    db-config:
+      id-type: auto
+
+jwt:
+  secret-key: [secret-key]
