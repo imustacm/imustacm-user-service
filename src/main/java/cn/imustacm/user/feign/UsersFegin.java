@@ -8,13 +8,16 @@ import cn.imustacm.user.model.Users;
 import cn.imustacm.user.service.IUsersService;
 import cn.imustacm.user.service.LoginLogService;
 import cn.imustacm.user.service.UsersService;
-import cn.imustacm.user.utils.Captcha;
-import cn.imustacm.user.utils.GifCaptcha;
-import cn.imustacm.user.utils.JwtUtils;
-import cn.imustacm.user.utils.RedisUtils;
+import cn.imustacm.user.utils.*;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.Claim;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -22,9 +25,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.mail.MessagingException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -45,54 +52,103 @@ public class UsersFegin implements IUsersService {
     @Autowired
     JwtUtils jwtUtils;
     @Autowired
+    EmailUtils emailUtils;
+    @Autowired
     RedisConnectionFactory redisConnectionFactory;
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    @Value("${jwt.header}")
+    private String header;
+    @Value("${jwt.prefix}")
+    private String prefix;
+    @Value("${mail.web-url}")
+    private String weburl;
+
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * 获取验证码
+     */
+    @Override
+    public Resp getVerification() {
+        redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
+        Captcha captcha = new GifCaptcha(146, 33, 4);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        String base64 = captcha.out(bos);
+        byte[] bytes = Base64.decode(base64);
+        String word = captcha.text().toLowerCase();
+        String uuid = UUID.randomUUID().toString().replaceAll("-", "");
+        String key = "Code:" + uuid;
+        redisTemplate.opsForValue().set(key, word, 300, TimeUnit.SECONDS);
+        return Resp.ok(CaptchaDTO.builder().key(uuid).value(bytes).build());
+    }
+
+    /**
+     * 用户注册
+     */
     @Override
     public Resp register(RegisterDTO registerDTO) {
         redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
+        //key为空
         if(registerDTO.getCaptchaKey() == null || "".equals(registerDTO.getCaptchaKey()))
             return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
         String key = "Code:" + registerDTO.getCaptchaKey();
         boolean hasKey = redisTemplate.hasKey(key);
+        //key在redis中不存在
         if(!hasKey)
             return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
-        String img = redisTemplate.opsForValue().get(key).toString();
-        redisTemplate.delete(key);
+        //value为空
         if(registerDTO.getCaptchaValue() == null || "".equals(registerDTO.getCaptchaValue()))
             return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EMPTY);
+        //根据key获取redis中的验证码
+        String img = redisTemplate.opsForValue().get(key).toString();
+        redisTemplate.delete(key);
+        //验证码不匹配
         if(!img.equals(registerDTO.getCaptchaValue().toLowerCase()))
             return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_ERROR);
+        //用户名为空
         if(registerDTO.getUsername() == null || "".equals(registerDTO.getUsername()))
             return Resp.fail(ErrorCodeEnum.USER_USERNAME_EMPTY);
-        String regUsername = "^([A-Z]|[a-z]|[0-9]){6,20}$";
-        boolean isUsernameMatch = Pattern.matches(regUsername, registerDTO.getUsername());
+        //正则校验用户名为6-20位数字字母组合
+        String rexUsername = "^([A-Z]|[a-z]|[0-9]){6,20}$";
+        boolean isUsernameMatch = Pattern.matches(rexUsername, registerDTO.getUsername());
+        //用户名格式不合法
         if(!isUsernameMatch)
             return Resp.fail(ErrorCodeEnum.USER_USERNAME_ILLEGAL);
+        //密码为空
         if(registerDTO.getPassword() == null || "".equals(registerDTO.getPassword()))
             return Resp.fail(ErrorCodeEnum.USER_PASSWORD_EMPTY);
-        String regPassword = "^([A-Z]|[a-z]|[0-9]|[`=\\[\\]\\-;,./~!@#$%^*()_+}{:?]){6,20}$";
-        boolean isPasswordMatch = Pattern.matches(regPassword, registerDTO.getPassword());
+        //正则校验密码为6-20位数字字母特殊字符组合
+        String rexPassword = "^([A-Z]|[a-z]|[0-9]|[`=\\[\\]\\-;,./~!@#$%^*()_+}{:?]){6,20}$";
+        boolean isPasswordMatch = Pattern.matches(rexPassword, registerDTO.getPassword());
+        //密码格式不合法
         if(!isPasswordMatch)
             return Resp.fail(ErrorCodeEnum.USER_PASSWORD_ILLEGAL);
+        //重复密码为空
         if(registerDTO.getRePassword() == null || "".equals(registerDTO.getRePassword()))
             return Resp.fail(ErrorCodeEnum.USER_REPASSWORD_EMPTY);
+        //两次密码输入不一致
         if(!registerDTO.getRePassword().equals(registerDTO.getPassword()))
             return Resp.fail(ErrorCodeEnum.USER_INCONSISTENT_PASSWORDS);
+        //姓名为空
         if(registerDTO.getName() == null || "".equals(registerDTO.getName()))
             return Resp.fail(ErrorCodeEnum.USER_NAME_EMPTY);
+        //姓名格式不合法
+        if(registerDTO.getName().length() < 2 || registerDTO.getName().length() > 16)
+            return Resp.fail(ErrorCodeEnum.USER_NAME_ILLEGAL);
         Users users = usersService.getByUsername(registerDTO.getUsername());
+        //用户已经存在
         if(users != null)
             return Resp.fail(ErrorCodeEnum.USER_USER_EXIST);
         String password = bCryptPasswordEncoder.encode(registerDTO.getPassword());
         LocalDateTime localDateTime = LocalDateTime
                 .parse(LocalDateTime.now().format(DATE_TIME_FORMATTER), DATE_TIME_FORMATTER);
-        String ip = "127.0.0.1";
+        String ip = "127.0.0.1";  //ip先写死
+        //写入数据库
         Users user = Users.builder()
                 .username(registerDTO.getUsername())
                 .password(password)
@@ -107,20 +163,105 @@ public class UsersFegin implements IUsersService {
         return Resp.ok();
     }
 
+    /**
+     * 用户登录
+     */
     @Override
-    public Resp getVerification() {
+    public Resp login(HttpServletResponse response, LoginDTO loginDTO) {
         redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
-        Captcha captcha = new GifCaptcha(146, 33, 4);
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        String base64 = captcha.out(bos);
-        byte[] bytes = Base64.decode(base64);
-        String word = captcha.text().toLowerCase();
-        String uuid = UUID.randomUUID().toString().replaceAll("-", "");
-        String key = "Code:" + uuid;
-        redisTemplate.opsForValue().set(key, word, 300, TimeUnit.SECONDS);
-        return Resp.ok(CaptchaOutDTO.builder().key(uuid).value(bytes).build());
+        if(loginDTO.getCaptchaKey() == null || "".equals(loginDTO.getCaptchaKey()))
+            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
+        String key = "Code:" + loginDTO.getCaptchaKey();
+        boolean hasKey = redisTemplate.hasKey(key);
+        if(!hasKey)
+            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
+        if(loginDTO.getCaptchaValue() == null || "".equals(loginDTO.getCaptchaValue()))
+            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EMPTY);
+        String img = redisTemplate.opsForValue().get(key).toString();
+        redisTemplate.delete(key);
+        if(!img.equals(loginDTO.getCaptchaValue().toLowerCase()))
+            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_ERROR);
+        if(loginDTO.getUsername() == null || "".equals(loginDTO.getUsername()))
+            return Resp.fail(ErrorCodeEnum.USER_USERNAME_EMPTY);
+        if(loginDTO.getPassword() == null || "".equals(loginDTO.getPassword()))
+            return Resp.fail(ErrorCodeEnum.USER_PASSWORD_EMPTY);
+        Users users = usersService.getByUsername(loginDTO.getUsername());
+        if(users == null)
+            return Resp.fail(ErrorCodeEnum.USER_USERINFO_ERROR);
+        int id = users.getId();
+        String username = users.getUsername();
+        String now = LocalDateTime.now().format(DATE_TIME_FORMATTER);
+        LocalDateTime localDateTime = LocalDateTime.parse(now, DATE_TIME_FORMATTER);
+        String ip = "127.0.0.1";  //ip先写死
+        boolean flag = bCryptPasswordEncoder.matches(loginDTO.getPassword(), users.getPassword());
+        //密码不正确
+        if(!flag) {
+            LoginLog loginLog = LoginLog.builder()
+                    .userid(id)
+                    .createtime(localDateTime)
+                    .ip(ip)
+                    .visible(false)
+                    .build();
+            boolean saveFlag = loginLogService.save(loginLog);
+            if(!saveFlag)
+                return Resp.fail(ErrorCodeEnum.FAIL);
+            return Resp.fail(ErrorCodeEnum.USER_USERINFO_ERROR);
+        }
+        //获取token
+        String token = jwtUtils.createLoginToken(id, username, now, ip);
+        LoginLog loginLog = LoginLog.builder()
+                .userid(id)
+                .createtime(localDateTime)
+                .ip(ip)
+                .visible(true)
+                .build();
+        boolean saveFlag = loginLogService.save(loginLog);
+        if(!saveFlag)
+            return Resp.fail(ErrorCodeEnum.FAIL);
+        redisTemplate.opsForValue().set("Login:" + token, id);
+        response.setHeader(header, prefix + token);
+        return Resp.ok();
     }
 
+    /**
+     * 绑定Email
+     */
+    @Override
+    public Resp bindEmail(HttpServletRequest request, BindEmailDTO bindEmailDTO) {
+        try {
+            String req = request.getHeader(header).replace(prefix, "");
+            Map<String, Claim> map = jwtUtils.verifyToken(req);
+            int id = map.get("id").asInt();
+            String email = bindEmailDTO.getEmail();
+            String rexEmail =  "^\\s*\\w+(?:\\.{0,1}[\\w-]+)*@[a-zA-Z0-9]+(?:[-.][a-zA-Z0-9]+)*\\.[a-zA-Z]+\\s*$";
+            boolean isEmailMatch = Pattern.matches(rexEmail, email);
+            //Email格式不合法
+            if(!isEmailMatch)
+                return Resp.fail(ErrorCodeEnum.USER_EMAIL_ILLEGAL);
+            String uuid = UUID.randomUUID().toString().replaceAll("-", "");
+            redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
+            redisTemplate.opsForValue().set("Email:" + uuid, id, 300, TimeUnit.SECONDS);
+            String url = weburl + "/api/user/verifyEmail?id=" + uuid;
+            String context = "您好，感谢您使用IMUSTACM！\n      "
+                    + "请点击以下链接以完成您的邮箱绑定：\n      "
+                    + url + "\n      "
+                    + "链接5分钟内有效，如果不能点击该链接地址，请复制并粘贴到浏览器的地址输入框。\n"
+                    + "                                                                                          "
+                    + "IMUSTACM\n"
+                    + "                                                                                 "
+                    + LocalDateTime.now().format(DATE_TIME_FORMATTER);
+            emailUtils.sendEmail(email, "IMUSTACM 邮箱验证", context);
+        } catch (MessagingException e) {
+            return Resp.fail(ErrorCodeEnum.USER_EMAIL_SEND_ERROR);
+        } catch (Exception e) {
+            return Resp.fail(ErrorCodeEnum.USER_LOGIN_STATUS);
+        }
+        return Resp.ok();
+    }
+
+    /**
+     * 分页获取用户列表
+     */
     @Override
     public Resp getUserList(Integer pageIndex, Integer pageSize) {
         if (Objects.isNull(pageIndex) || Objects.isNull(pageSize)) {
@@ -144,52 +285,5 @@ public class UsersFegin implements IUsersService {
         Page<UserBaseInfoDTO> result = new Page<>(page.getCurrent(), userBaseInfoDTOList.size(), page.getTotal());
         result.setRecords(userBaseInfoDTOList);
         return Resp.ok(result);
-    }
-
-
-    @Override
-    public Resp login(LoginDTO loginDTO) {
-        redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
-        if(loginDTO.getCaptchaKey() == null || "".equals(loginDTO.getCaptchaKey()))
-            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
-        String key = "Code:" + loginDTO.getCaptchaKey();
-        boolean hasKey = redisTemplate.hasKey(key);
-        if(!hasKey)
-            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
-        String img = redisTemplate.opsForValue().get(key).toString();
-        redisTemplate.delete(key);
-        if(loginDTO.getCaptchaValue() == null || "".equals(loginDTO.getCaptchaValue()))
-            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EMPTY);
-        if(!img.equals(loginDTO.getCaptchaValue().toLowerCase()))
-            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_ERROR);
-        if(loginDTO.getUsername() == null || "".equals(loginDTO.getUsername()))
-            return Resp.fail(ErrorCodeEnum.USER_USERNAME_EMPTY);
-        if(loginDTO.getPassword() == null || "".equals(loginDTO.getPassword()))
-            return Resp.fail(ErrorCodeEnum.USER_PASSWORD_EMPTY);
-        Users users = usersService.getByUsername(loginDTO.getUsername());
-        if(users == null)
-            return Resp.fail(ErrorCodeEnum.USER_USERINFO_ERROR);
-        boolean flag = bCryptPasswordEncoder.matches(loginDTO.getPassword(), users.getPassword());
-        if(!flag)
-            return Resp.fail(ErrorCodeEnum.USER_USERINFO_ERROR);
-        int id = users.getId();
-        String username = users.getUsername();
-        String now = LocalDateTime.now().format(DATE_TIME_FORMATTER);
-        LocalDateTime localDateTime = LocalDateTime.parse(now, DATE_TIME_FORMATTER);
-        String ip = "127.0.0.1";
-        String token = jwtUtils.createToken(id, username, now, ip);
-        LoginLog loginLog = LoginLog.builder()
-                .userid(id)
-                .createtime(localDateTime)
-                .ip(ip)
-                .visible(true)
-                .build();
-        boolean saveFlag = loginLogService.save(loginLog);
-        if(saveFlag) {
-            redisTemplate.opsForValue().set("Login:" + token, id);
-            return Resp.ok(LoginOutDTO.builder().token(token).logintime(now).build());
-        } else {
-            return Resp.fail(ErrorCodeEnum.FAIL);
-        }
     }
 }
