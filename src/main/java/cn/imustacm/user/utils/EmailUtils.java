@@ -29,8 +29,8 @@ public class EmailUtils {
 
     public void sendEmail(String mailTo, String subject, String context) throws MessagingException {
         Properties props = new Properties();
-        props.put("mail.smtp.host", host);//设置发送邮件的邮件服务器的属性（这里使用网易的smtp服务器）
-        props.put("mail.smtp.auth", "true");  //需要经过授权，也就是有户名和密码的校验，这样才能通过验证（一定要有这一条）
+        props.put("mail.smtp.host", host);//设置发送邮件的邮件服务器的属性
+        props.put("mail.smtp.auth", "true");  //需要经过授权，也就是有户名和密码的校验，这样才能通过验证
         Session session = Session.getDefaultInstance(props);//用props对象构建一个session
         session.setDebug(true);
         MimeMessage message = new MimeMessage(session);//用session为参数定义消息对象

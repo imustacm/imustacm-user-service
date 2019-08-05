@@ -14,6 +14,8 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,7 @@ import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -156,6 +159,7 @@ public class UsersFegin implements IUsersService {
                 .regtime(localDateTime)
                 .regip(ip)
                 .visible(true)
+                .emailflag(false)
                 .build();
         boolean saveFlag = usersService.save(user);
         if(!saveFlag)
@@ -231,7 +235,21 @@ public class UsersFegin implements IUsersService {
         try {
             String req = request.getHeader(header).replace(prefix, "");
             Map<String, Claim> map = jwtUtils.verifyToken(req);
+            String now = LocalDateTime.now().format(DATE_TIME_FORMATTER);
+            LocalDateTime localDateTime = LocalDateTime.parse(now, DATE_TIME_FORMATTER);
             int id = map.get("id").asInt();
+            Users users = usersService.getById(id);
+            if(users == null)
+                return Resp.fail(ErrorCodeEnum.FAIL);
+            LocalDateTime time = users.getEmaicltime();
+            if(time != null) {
+                //获取当前时间
+                long minus = (int) Duration.between(time, localDateTime).toMillis();
+                minus /= 1000;
+                if(minus <= 300)
+                    return Resp.fail(ErrorCodeEnum.USER_EMAIL_SEND_TIME);
+            }
+
             String email = bindEmailDTO.getEmail();
             String rexEmail =  "^\\s*\\w+(?:\\.{0,1}[\\w-]+)*@[a-zA-Z0-9]+(?:[-.][a-zA-Z0-9]+)*\\.[a-zA-Z]+\\s*$";
             boolean isEmailMatch = Pattern.matches(rexEmail, email);
@@ -242,15 +260,26 @@ public class UsersFegin implements IUsersService {
             redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
             redisTemplate.opsForValue().set("Email:" + uuid, id, 300, TimeUnit.SECONDS);
             String url = weburl + "/api/user/verifyEmail?id=" + uuid;
-            String context = "您好，感谢您使用IMUSTACM！\n      "
-                    + "请点击以下链接以完成您的邮箱绑定：\n      "
-                    + url + "\n      "
-                    + "链接5分钟内有效，如果不能点击该链接地址，请复制并粘贴到浏览器的地址输入框。\n"
-                    + "                                                                                          "
+            String context = "您好，感谢您使用IMUSTACM！\n       "
+                    + "请点击以下链接以完成您的邮箱绑定：\n       "
+                    + url + "\n       "
+                    + "该链接5分钟内有效，请不要将链接地址泄露给其他人员，以免造成不必要的损失。\n       "
+                    + "如果不能点击该链接地址，请复制并粘贴到浏览器的地址输入框中访问。\n       "
+                    + "该邮件为系统自动发出，请勿直接回复，如有问题请联系网站管理员，谢谢 。\n"
+                    + "                                                           "
                     + "IMUSTACM\n"
-                    + "                                                                                 "
-                    + LocalDateTime.now().format(DATE_TIME_FORMATTER);
+                    + "                                                   "
+                    + now;
             emailUtils.sendEmail(email, "IMUSTACM 邮箱验证", context);
+            //更新数据库
+            Users user = Users.builder()
+                    .id(id)
+                    .email(email)
+                    .emaicltime(localDateTime)
+                    .build();
+            boolean saveFlag = usersService.updateById(user);
+            if(!saveFlag)
+                return Resp.fail(ErrorCodeEnum.FAIL);
         } catch (MessagingException e) {
             return Resp.fail(ErrorCodeEnum.USER_EMAIL_SEND_ERROR);
         } catch (Exception e) {
