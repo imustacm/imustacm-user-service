@@ -9,13 +9,7 @@ import cn.imustacm.user.service.IUsersService;
 import cn.imustacm.user.service.LoginLogService;
 import cn.imustacm.user.service.UsersService;
 import cn.imustacm.user.utils.*;
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
-import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -259,13 +253,13 @@ public class UsersFegin implements IUsersService {
             String uuid = UUID.randomUUID().toString().replaceAll("-", "");
             redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
             redisTemplate.opsForValue().set("Email:" + uuid, id, 300, TimeUnit.SECONDS);
-            String url = weburl + "/api/user/verifyEmail?id=" + uuid;
+            String url = weburl + uuid;
             String context = "您好，感谢您使用IMUSTACM！\n       "
-                    + "请点击以下链接以完成您的邮箱绑定：\n       "
+                    + "请点击以下链接以完成您的邮箱验证：\n       "
                     + url + "\n       "
-                    + "该链接5分钟内有效，请不要将链接地址泄露给其他人员，以免造成不必要的损失。\n       "
                     + "如果不能点击该链接地址，请复制并粘贴到浏览器的地址输入框中访问。\n       "
-                    + "该邮件为系统自动发出，请勿直接回复，如有问题请联系网站管理员，谢谢 。\n"
+                    + "该链接5分钟内有效，请不要将链接地址泄露给其他人员，以免造成不必要的损失。\n       "
+                    + "该邮件为系统自动发出，请勿直接回复。如有问题，请与IMUSTACM管理员联系，谢谢。\n"
                     + "                                                           "
                     + "IMUSTACM\n"
                     + "                                                   "
@@ -276,6 +270,7 @@ public class UsersFegin implements IUsersService {
                     .id(id)
                     .email(email)
                     .emaicltime(localDateTime)
+                    .emailflag(false)
                     .build();
             boolean saveFlag = usersService.updateById(user);
             if(!saveFlag)
@@ -285,6 +280,36 @@ public class UsersFegin implements IUsersService {
         } catch (Exception e) {
             return Resp.fail(ErrorCodeEnum.USER_LOGIN_STATUS);
         }
+        return Resp.ok();
+    }
+
+    /**
+     * 验证Email
+     */
+    @Override
+    public Resp verifyEmail(String id) {
+        String now = LocalDateTime.now().format(DATE_TIME_FORMATTER);
+        LocalDateTime localDateTime = LocalDateTime.parse(now, DATE_TIME_FORMATTER);
+        redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
+        //key为空
+        if(id == null || "".equals(id))
+            return Resp.fail(ErrorCodeEnum.USER_EMAIL_LINK_ILLEGAL);
+        String key = "Email:" + id;
+        boolean hasKey = redisTemplate.hasKey(key);
+        //key在redis中不存在
+        if(!hasKey)
+            return Resp.fail(ErrorCodeEnum.USER_EMAIL_LINK_ILLEGAL);
+        int userid = Integer.valueOf(redisTemplate.opsForValue().get(key).toString());
+        redisTemplate.delete(key);
+        //更新数据库
+        Users user = Users.builder()
+                .id(userid)
+                .emailutime(localDateTime)
+                .emailflag(true)
+                .build();
+        boolean saveFlag = usersService.updateById(user);
+        if(!saveFlag)
+            return Resp.fail(ErrorCodeEnum.FAIL);
         return Resp.ok();
     }
 
