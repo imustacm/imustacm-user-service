@@ -37,3 +37,8 @@ mail:
   username: [username]
   password: [password]
   web-url: [web-url]
+
+qiniu:
+  accessKey: [accessKey]
+  secretKey: [secretKey]
+  bucket: [bucket]

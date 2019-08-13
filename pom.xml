@@ -84,6 +84,11 @@
             <artifactId>mail</artifactId>
             <version>1.5.0-b01</version>
         </dependency>
+        <dependency>
+            <groupId>com.qiniu</groupId>
+            <artifactId>qiniu-java-sdk</artifactId>
+            <version>7.2.11</version>
+        </dependency>
     </dependencies>
 
 </project>
