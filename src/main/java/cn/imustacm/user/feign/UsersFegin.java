@@ -11,6 +11,7 @@ import cn.imustacm.user.service.UsersService;
 import cn.imustacm.user.utils.*;
 import com.auth0.jwt.interfaces.Claim;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.qiniu.util.Auth;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,6 +63,13 @@ public class UsersFegin implements IUsersService {
     @Value("${mail.web-url}")
     private String weburl;
 
+    @Value("${qiniu.accessKey}")
+    private String accessKey;
+    @Value("${qiniu.secretKey}")
+    private String secretKey;
+    @Value("${qiniu.bucket}")
+    private String bucket;
+
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
         return new BCryptPasswordEncoder();
@@ -82,6 +90,16 @@ public class UsersFegin implements IUsersService {
         String key = "Code:" + uuid;
         redisTemplate.opsForValue().set(key, word, 300, TimeUnit.SECONDS);
         return Resp.ok(CaptchaDTO.builder().key(uuid).value(bytes).build());
+    }
+
+    /**
+     * 获取七牛云Token
+     */
+    @Override
+    public Resp getQiniuToken() {
+        Auth auth = Auth.create(accessKey, secretKey);
+        String token = auth.uploadToken(bucket);
+        return Resp.ok(QiniuDTO.builder().token(token).build());
     }
 
     /**
