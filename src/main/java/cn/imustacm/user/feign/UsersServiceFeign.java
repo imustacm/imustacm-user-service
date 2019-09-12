@@ -15,7 +15,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
-public class UsersFegin implements IUsersService {
+public class UsersServiceFeign implements IUsersService {
 
     @Autowired
     private UsersService usersService;
