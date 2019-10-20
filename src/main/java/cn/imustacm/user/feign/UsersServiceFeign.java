@@ -47,4 +47,12 @@ public class UsersServiceFeign implements IUsersService {
         result.setRecords(userBaseInfoDTOList);
         return Resp.ok(result);
     }
+
+    @Override
+    public Users getUser(Long userId) {
+        if (Objects.isNull(userId)) {
+            return null;
+        }
+        return usersService.getById(userId);
+    }
 }
