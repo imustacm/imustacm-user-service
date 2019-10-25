@@ -38,18 +38,6 @@ jwt:
   header: Authorization
   prefix: 'Bearer '
 
-mail:
-  host: [host]
-  nickname: [nick]
-  username: [username]
-  password: [password]
-  web-url: [web-url]
-
-qiniu:
-  accessKey: [accessKey]
-  secretKey: [secretKey]
-  bucket: [bucket]
-
 eureka:
   client:
     service-url:

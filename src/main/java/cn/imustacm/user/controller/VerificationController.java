@@ -5,7 +5,7 @@ import cn.imustacm.common.domain.Resp;
 import cn.imustacm.user.dto.CaptchaDTO;
 import cn.imustacm.user.utils.Captcha;
 import cn.imustacm.user.utils.GifCaptcha;
-import cn.imustacm.user.utils.RedisUtils;
+import cn.imustacm.common.utils.RedisUtils;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.RedisConnectionFactory;

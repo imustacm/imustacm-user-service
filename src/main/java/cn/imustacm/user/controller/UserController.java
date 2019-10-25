@@ -7,12 +7,15 @@ import cn.imustacm.user.dto.BindEmailDTO;
 import cn.imustacm.user.dto.LoginDTO;
 import cn.imustacm.user.dto.RegisterDTO;
 import cn.imustacm.user.model.LoginLog;
+import cn.imustacm.user.model.Option;
 import cn.imustacm.user.model.Users;
 import cn.imustacm.user.service.LoginLogService;
+import cn.imustacm.user.service.OptionService;
 import cn.imustacm.user.service.UsersService;
 import cn.imustacm.user.utils.EmailUtils;
 import cn.imustacm.user.utils.JwtUtils;
-import cn.imustacm.user.utils.RedisUtils;
+import cn.imustacm.common.utils.RedisUtils;
+import com.alibaba.fastjson.JSONObject;
 import com.auth0.jwt.interfaces.Claim;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,39 +48,30 @@ public class UserController {
 
     @Autowired
     private UsersService usersService;
-
     @Autowired
     private LoginLogService loginLogService;
-
     @Autowired
     RedisTemplate<Object, Object> redisTemplate;
-
     @Autowired
     JwtUtils jwtUtils;
-
     @Autowired
     EmailUtils emailUtils;
-
     @Autowired
     RedisConnectionFactory redisConnectionFactory;
-
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
-
+    @Autowired
+    private OptionService optionService;
 
     @Value("${jwt.header}")
     private String header;
     @Value("${jwt.prefix}")
     private String prefix;
-    @Value("${mail.web-url}")
-    private String weburl;
-
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
 
     /**
      * 用户注册
@@ -255,6 +249,9 @@ public class UserController {
             String uuid = UUID.randomUUID().toString().replaceAll("-", "");
             redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
             redisTemplate.opsForValue().set("Email:" + uuid, id, 300, TimeUnit.SECONDS);
+            Option option = optionService.getByKey("mail");
+            JSONObject value = JSONObject.parseObject(option.getValue());
+            String weburl = value.getString("weburl");
             String url = weburl + uuid;
             String context = "您好，感谢您使用IMUSTACM！\n       "
                     + "请点击以下链接以完成您的邮箱验证：\n       "
