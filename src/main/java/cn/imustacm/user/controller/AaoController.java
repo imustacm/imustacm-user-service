@@ -3,25 +3,18 @@ package cn.imustacm.user.controller;
 import cn.imustacm.common.domain.Resp;
 import cn.imustacm.common.enums.ErrorCodeEnum;
 import cn.imustacm.user.dto.CaptchaDTO;
-import cn.imustacm.user.utils.Captcha;
-import cn.imustacm.user.utils.GifCaptcha;
-import cn.imustacm.user.utils.RedisUtils;
-import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
+import cn.imustacm.common.utils.RedisUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import sun.misc.BASE64Encoder;
 
-import javax.servlet.http.Cookie;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import java.net.URL;
 

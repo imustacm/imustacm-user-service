@@ -1,5 +1,9 @@
 package cn.imustacm.user.utils;
 
+import cn.imustacm.user.model.Option;
+import cn.imustacm.user.service.OptionService;
+import com.alibaba.fastjson.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -18,16 +22,17 @@ import java.util.Properties;
 @Component
 public class EmailUtils {
 
-    @Value("${mail.host}")
-    private String host;
-    @Value("${mail.nickname}")
-    private String nickname;
-    @Value("${mail.username}")
-    private String username;
-    @Value("${mail.password}")
-    private String password;
+    @Autowired
+    private OptionService optionService;
 
     public void sendEmail(String mailTo, String subject, String context) throws MessagingException {
+        Option option = optionService.getByKey("mail");
+        JSONObject value = JSONObject.parseObject(option.getValue());
+        String host = value.getString("host");
+        String nickname = value.getString("nickname");
+        String username = value.getString("username");
+        String password = value.getString("password");
+
         Properties props = new Properties();
         props.put("mail.smtp.host", host);//设置发送邮件的邮件服务器的属性
         props.put("mail.smtp.auth", "true");  //需要经过授权，也就是有户名和密码的校验，这样才能通过验证
@@ -40,6 +45,7 @@ public class EmailUtils {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+
         message.setFrom(new InternetAddress(nick+" <"+username+">"));//加载发件人地址
         String[] mailTos = null;
         mailTos = mailTo.split(",");
@@ -47,6 +53,7 @@ public class EmailUtils {
         for (int i = 0; i < mailTos.length; i++) {
             sendTo[i] = new InternetAddress(mailTos[i]);
         }
+
         message.addRecipients(Message.RecipientType.TO,sendTo);
 //        message.addRecipients(MimeMessage.RecipientType.CC, InternetAddress.parse(FROM));//设置在发送给收信人之前给自己（发送方）抄送一份，不然会被当成垃圾邮件，报554错
         message.setSubject(subject);//加载标题

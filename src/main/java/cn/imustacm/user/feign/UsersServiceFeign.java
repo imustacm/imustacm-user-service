@@ -2,8 +2,10 @@ package cn.imustacm.user.feign;
 
 import cn.imustacm.common.domain.Resp;
 import cn.imustacm.user.dto.UserBaseInfoDTO;
+import cn.imustacm.user.model.Option;
 import cn.imustacm.user.model.Users;
 import cn.imustacm.user.service.IUsersService;
+import cn.imustacm.user.service.OptionService;
 import cn.imustacm.user.service.UsersService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,8 @@ public class UsersServiceFeign implements IUsersService {
 
     @Autowired
     private UsersService usersService;
+    @Autowired
+    private OptionService optionService;
 
     /**
      * 分页获取用户列表
@@ -54,5 +58,10 @@ public class UsersServiceFeign implements IUsersService {
             return null;
         }
         return usersService.getById(userId);
+    }
+
+    @Override
+    public Option getByKey(String key) {
+        return optionService.getByKey(key);
     }
 }
