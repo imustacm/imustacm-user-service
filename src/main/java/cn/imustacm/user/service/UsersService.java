@@ -32,4 +32,13 @@ public interface UsersService extends IService<Users> {
      * @return
      */
     Users getByUsername(String username);
+
+    /**
+     * 分页查询解题排名
+     *
+     * @param pageIndex
+     * @param pageSize
+     * @return
+     */
+    Page<Users> getRankList(Integer pageIndex, Integer pageSize);
 }

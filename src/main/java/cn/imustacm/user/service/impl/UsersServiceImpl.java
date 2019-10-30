@@ -23,11 +23,11 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
 
     @Override
     public Page<Users> getList(Integer pageIndex, Integer pageSize) {
-        if (pageIndex < 0){
+        if (pageIndex <= 0){
             pageIndex = 1;
         }
-        if(pageSize < 0 ){
-            pageSize = 20;
+        if(pageSize <= 0 ){
+            pageSize = 100;
         }
         LambdaQueryWrapper<Users> wrapper = new QueryWrapper<Users>().lambda().orderByAsc(Users::getId);
         return (Page<Users>) page(new Page<>(pageIndex, pageSize), wrapper);
@@ -38,5 +38,18 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         LambdaQueryWrapper<Users> wrapper = new QueryWrapper<Users>().lambda().eq(Users::getUsername, username);
         Users users = getOne(wrapper);
         return users;
+    }
+
+    @Override
+    public Page<Users> getRankList(Integer pageIndex, Integer pageSize) {
+        if (pageIndex <= 0){
+            pageIndex = 1;
+        }
+        if(pageSize <= 0 ){
+            pageSize = 100;
+        }
+        LambdaQueryWrapper<Users> wrapper = new QueryWrapper<Users>().lambda().eq(Users::isVisible, true)
+                .orderByDesc(Users::getSolved).orderByAsc(Users::getSubmit).orderByAsc(Users::getRegtime);
+        return (Page<Users>) page(new Page<>(pageIndex, pageSize), wrapper);
     }
 }
