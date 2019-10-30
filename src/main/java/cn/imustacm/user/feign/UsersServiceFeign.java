@@ -53,6 +53,9 @@ public class UsersServiceFeign implements IUsersService {
         return Resp.ok(result);
     }
 
+    /**
+     * 根据id获取用户信息
+     */
     @Override
     public Users getUser(Long userId) {
         if (Objects.isNull(userId)) {
@@ -61,13 +64,16 @@ public class UsersServiceFeign implements IUsersService {
         return usersService.getById(userId);
     }
 
+    /**
+     * 根据key获取设置项
+     */
     @Override
     public Option getByKey(String key) {
         return optionService.getByKey(key);
     }
 
     /**
-     * 分页获取用户列表
+     * 分页获取解题排名
      */
     @Override
     public Page<RankListDTO> getRankList(Integer pageIndex, Integer pageSize) {
