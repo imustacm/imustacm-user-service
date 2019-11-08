@@ -48,7 +48,7 @@ public class UsersServiceFeign implements IUsersService {
                         .build())
                 .collect(Collectors.toList());
         // 将dto集合封装到分页对象
-        Page<UserBaseInfoDTO> result = new Page<>(page.getCurrent(), userBaseInfoDTOList.size(), page.getTotal());
+        Page<UserBaseInfoDTO> result = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
         result.setRecords(userBaseInfoDTOList);
         return Resp.ok(result);
     }
@@ -103,7 +103,7 @@ public class UsersServiceFeign implements IUsersService {
                         .build())
                 .collect(Collectors.toList());
         // 将dto集合封装到分页对象
-        Page<RankListDTO> result = new Page<>(page.getCurrent(), rankListDTOs.size(), page.getTotal());
+        Page<RankListDTO> result = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
         result.setRecords(rankListDTOs);
         return result;
     }
