@@ -3,6 +3,7 @@ package cn.imustacm.user.controller;
 import cn.imustacm.common.consts.GlobalConst;
 import cn.imustacm.common.domain.Resp;
 import cn.imustacm.common.enums.ErrorCodeEnum;
+import cn.imustacm.common.utils.JwtUtils;
 import cn.imustacm.user.dto.BindEmailDTO;
 import cn.imustacm.user.dto.LoginDTO;
 import cn.imustacm.user.dto.RegisterDTO;
@@ -13,7 +14,6 @@ import cn.imustacm.user.service.LoginLogService;
 import cn.imustacm.user.service.OptionService;
 import cn.imustacm.user.service.UsersService;
 import cn.imustacm.user.utils.EmailUtils;
-import cn.imustacm.user.utils.JwtUtils;
 import cn.imustacm.common.utils.RedisUtils;
 import com.alibaba.fastjson.JSONObject;
 import com.auth0.jwt.interfaces.Claim;
@@ -52,8 +52,7 @@ public class UserController {
     private LoginLogService loginLogService;
     @Autowired
     RedisTemplate<Object, Object> redisTemplate;
-    @Autowired
-    JwtUtils jwtUtils;
+
     @Autowired
     EmailUtils emailUtils;
     @Autowired
@@ -63,10 +62,26 @@ public class UserController {
     @Autowired
     private OptionService optionService;
 
+    @Value("${jwt.secret-key}")
+    private String jwtSecretKey;
+
+    @Value("${jwt.expire-time}")
+    private String jwtExpireTime;
+
     @Value("${jwt.header}")
     private String header;
+
     @Value("${jwt.prefix}")
     private String prefix;
+
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    @Bean
+    public JwtUtils jwtUtils() {
+        return new JwtUtils(jwtSecretKey, Long.parseLong(jwtExpireTime));
+    }
+
 
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
@@ -200,7 +215,7 @@ public class UserController {
             return Resp.fail(ErrorCodeEnum.USER_USERINFO_ERROR);
         }
         //获取token
-        String token = jwtUtils.createLoginToken(id, username, now, ip);
+        String token = jwtUtils.createToken(String.valueOf(id));
         LoginLog loginLog = LoginLog.builder()
                 .userid(id)
                 .createtime(localDateTime)
@@ -213,6 +228,7 @@ public class UserController {
         redisTemplate.opsForValue().set("Login:" + token, id);
         return Resp.ok(prefix + token);
     }
+
 
     /**
      * 邮箱绑定
