@@ -17,6 +17,7 @@ import cn.imustacm.user.utils.EmailUtils;
 import cn.imustacm.common.utils.RedisUtils;
 import com.alibaba.fastjson.JSONObject;
 import com.auth0.jwt.interfaces.Claim;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,6 +45,7 @@ import static cn.imustacm.common.consts.DatePatternConst.DATE_TIME_FORMATTER;
  */
 @RestController
 @RequestMapping("/user")
+@Slf4j
 public class UserController {
 
     @Autowired
@@ -215,7 +217,12 @@ public class UserController {
             return Resp.fail(ErrorCodeEnum.USER_USERINFO_ERROR);
         }
         //获取token
-        String token = jwtUtils.createToken(String.valueOf(id));
+        String token = null;
+        try {
+            token = jwtUtils.createToken(String.valueOf(id));
+        } catch (Exception e) {
+            log.error("生成token错误 e:{}", e);
+        }
         LoginLog loginLog = LoginLog.builder()
                 .userid(id)
                 .createtime(localDateTime)
@@ -225,7 +232,7 @@ public class UserController {
         boolean saveFlag = loginLogService.save(loginLog);
         if (!saveFlag)
             return Resp.fail(ErrorCodeEnum.FAIL);
-        redisTemplate.opsForValue().set("Login:" + token, id);
+            redisTemplate.opsForValue().set("Login:" + token, id);
         return Resp.ok(prefix + token);
     }
 
