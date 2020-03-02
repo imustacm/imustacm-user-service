@@ -16,7 +16,6 @@ import java.util.Map;
  * @author wangjianli
  * @date 2019-07-31 13:52
  */
-@Component
 public class JwtUtils {
 
     @Value("${jwt.secret-key}")
