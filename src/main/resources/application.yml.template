@@ -35,6 +35,7 @@ mybatis-plus:
 
 jwt:
   secret-key: [secret-key]
+  expire-time: 60000
   header: Authorization
   prefix: 'Bearer '
 

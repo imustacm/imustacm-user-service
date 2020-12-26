@@ -7,6 +7,7 @@ import cn.imustacm.common.utils.JwtUtils;
 import cn.imustacm.user.dto.BindEmailDTO;
 import cn.imustacm.user.dto.LoginDTO;
 import cn.imustacm.user.dto.RegisterDTO;
+import cn.imustacm.user.dto.TokenDTO;
 import cn.imustacm.user.model.LoginLog;
 import cn.imustacm.user.model.Option;
 import cn.imustacm.user.model.Users;
@@ -44,8 +45,8 @@ import static cn.imustacm.common.consts.DatePatternConst.DATE_TIME_FORMATTER;
  * @date 2019/08/18
  */
 @RestController
+@CrossOrigin
 @RequestMapping("/user")
-@Slf4j
 public class UserController {
 
     @Autowired
@@ -221,7 +222,7 @@ public class UserController {
         try {
             token = jwtUtils.createToken(String.valueOf(id));
         } catch (Exception e) {
-            log.error("生成token错误 e:{}", e);
+            //log.error("生成token错误 e:{}", e);
         }
         LoginLog loginLog = LoginLog.builder()
                 .userid(id)
@@ -233,7 +234,7 @@ public class UserController {
         if (!saveFlag)
             return Resp.fail(ErrorCodeEnum.FAIL);
             redisTemplate.opsForValue().set("Login:" + token, id);
-        return Resp.ok(prefix + token);
+        return Resp.ok(TokenDTO.builder().accessToken(prefix + token).build());
     }
 
 
