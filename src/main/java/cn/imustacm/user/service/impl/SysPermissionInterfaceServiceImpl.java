@@ -1,14 +1,26 @@
 package cn.imustacm.user.service.impl;
 
+import cn.imustacm.user.dto.InterfaceDTO;
+import cn.imustacm.user.dto.PermissionInterfaceDTO;
 import cn.imustacm.user.mapper.SysPermissionInterfaceMapper;
 import cn.imustacm.user.model.SysPermissionInterface;
+import cn.imustacm.user.service.SysInterfaceService;
 import cn.imustacm.user.service.SysPermissionInterfaceService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * <p>
- *  服务实现类
+ * 服务实现类
  * </p>
  *
  * @author liandong
@@ -16,5 +28,45 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class SysPermissionInterfaceServiceImpl extends ServiceImpl<SysPermissionInterfaceMapper, SysPermissionInterface> implements SysPermissionInterfaceService {
+
+
+    @Autowired
+    private SysInterfaceService sysInterfaceService;
+
+    @Override
+    //@Transactional(rollbackFor = Exception.class)
+    public boolean saveInterfaceMapping(PermissionInterfaceDTO permissionInterfaceDTO) {
+        if (Objects.isNull(permissionInterfaceDTO)) {
+            return true;
+        }
+        List<Integer> interfaceIdList = permissionInterfaceDTO.getInterfaceIdList();
+        if (CollectionUtils.isEmpty(interfaceIdList)) {
+            return true;
+        }
+        List<SysPermissionInterface> sysPermissionInterfaceList = interfaceIdList
+                .stream()
+                .map(e -> SysPermissionInterface
+                        .builder()
+                        .permissionId(permissionInterfaceDTO.getPermissionId())
+                        .interfaceId(e)
+                        .build())
+                .collect(Collectors.toList());
+
+        // 1 删除旧关联关系
+        LambdaQueryWrapper<SysPermissionInterface> deleteWrapper = new QueryWrapper<SysPermissionInterface>().lambda()
+                .eq(SysPermissionInterface::getPermissionId, permissionInterfaceDTO.getPermissionId());
+        remove(deleteWrapper);
+        // 2 保存新的关联关系
+        return saveBatch(sysPermissionInterfaceList);
+    }
+
+    @Override
+    public List<InterfaceDTO> getInterfaceListByPermissionId(Integer permissionId) {
+        LambdaQueryWrapper<SysPermissionInterface> queryWrapper = new QueryWrapper<SysPermissionInterface>().lambda()
+                .eq(SysPermissionInterface::getPermissionId, permissionId);
+        List<SysPermissionInterface> list = list(queryWrapper);
+        List<Integer> interfaceIdList = list.stream().map(SysPermissionInterface::getInterfaceId).collect(Collectors.toList());
+        return sysInterfaceService.getList(interfaceIdList);
+    }
 
 }
