@@ -27,10 +27,10 @@ public interface SysPermissionService extends IService<SysPermission> {
     /**
      * 批量获取权限list
      *
-     * @param permissionList
+     * @param permissionIdList
      * @return
      */
-    List<PermissionDTO> batchGetList(List<Integer> permissionList);
+    List<PermissionDTO> batchGetList(List<Integer> permissionIdList);
 
 
 }

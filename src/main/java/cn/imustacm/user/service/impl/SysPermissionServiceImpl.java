@@ -8,6 +8,8 @@ import cn.imustacm.user.service.SysPermissionService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.common.collect.Lists;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -34,9 +36,12 @@ public class SysPermissionServiceImpl extends ServiceImpl<SysPermissionMapper, S
     }
 
     @Override
-    public List<PermissionDTO> batchGetList(List<Integer> permissionList) {
+    public List<PermissionDTO> batchGetList(List<Integer> permissionIdList) {
+        if(CollectionUtils.isEmpty(permissionIdList)){
+            return Lists.newArrayList();
+        }
         LambdaQueryWrapper<SysPermission> wrapper = new QueryWrapper<SysPermission>().lambda()
-                .in(SysPermission::getId, permissionList)
+                .in(SysPermission::getId, permissionIdList)
                 .eq(SysPermission::getVisible, true);
         List<SysPermission> list = list(wrapper);
         return buildDTOList(list);

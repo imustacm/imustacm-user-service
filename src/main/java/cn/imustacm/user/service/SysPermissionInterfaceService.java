@@ -7,6 +7,7 @@ import cn.imustacm.user.model.SysPermissionInterface;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * <p>
@@ -36,6 +37,14 @@ public interface SysPermissionInterfaceService extends IService<SysPermissionInt
      * @return
      */
     List<InterfaceDTO> getInterfaceListByPermissionId(Integer permissionId);
+
+    /**
+     * 根据url
+     *
+     * @param url
+     * @return
+     */
+    Set<String> getInterfacePermissionNameSet(String url);
 
 
 }
