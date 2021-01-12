@@ -97,58 +97,58 @@ public class UserController {
      */
     @PostMapping("/register")
     public Resp register(@RequestBody RegisterDTO registerDTO) {
-//        redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
-//        //key为空
-//        if (registerDTO.getCaptchaKey() == null || "".equals(registerDTO.getCaptchaKey()))
-//            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
-//        String key = "Code:" + registerDTO.getCaptchaKey();
-//        boolean hasKey = redisTemplate.hasKey(key);
-//        //key在redis中不存在
-//        if (!hasKey)
-//            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
-//        //value为空
-//        if (registerDTO.getCaptchaValue() == null || "".equals(registerDTO.getCaptchaValue()))
-//            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EMPTY);
-//        //根据key获取redis中的验证码
-//        String img = redisTemplate.opsForValue().get(key).toString();
-//        redisTemplate.delete(key);
-//        //验证码不匹配
-//        if (!img.equals(registerDTO.getCaptchaValue().toLowerCase()))
-//            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_ERROR);
-//        //用户名为空
-//        if (registerDTO.getUsername() == null || "".equals(registerDTO.getUsername()))
-//            return Resp.fail(ErrorCodeEnum.USER_USERNAME_EMPTY);
-//        //正则校验用户名为6-20位数字字母组合
-//        String rexUsername = "^([A-Z]|[a-z]|[0-9]){6,20}$";
-//        boolean isUsernameMatch = Pattern.matches(rexUsername, registerDTO.getUsername());
-//        //用户名格式不合法
-//        if (!isUsernameMatch)
-//            return Resp.fail(ErrorCodeEnum.USER_USERNAME_ILLEGAL);
-//        //密码为空
-//        if (registerDTO.getPassword() == null || "".equals(registerDTO.getPassword()))
-//            return Resp.fail(ErrorCodeEnum.USER_PASSWORD_EMPTY);
-//        //正则校验密码为6-20位数字字母特殊字符组合
-//        String rexPassword = "^([A-Z]|[a-z]|[0-9]|[`=\\[\\]\\-;,./~!@#$%^*()_+}{:?]){6,20}$";
-//        boolean isPasswordMatch = Pattern.matches(rexPassword, registerDTO.getPassword());
-//        //密码格式不合法
-//        if (!isPasswordMatch)
-//            return Resp.fail(ErrorCodeEnum.USER_PASSWORD_ILLEGAL);
-//        //重复密码为空
-//        if (registerDTO.getRePassword() == null || "".equals(registerDTO.getRePassword()))
-//            return Resp.fail(ErrorCodeEnum.USER_REPASSWORD_EMPTY);
-//        //两次密码输入不一致
-//        if (!registerDTO.getRePassword().equals(registerDTO.getPassword()))
-//            return Resp.fail(ErrorCodeEnum.USER_INCONSISTENT_PASSWORDS);
-//        //姓名为空
-//        if (registerDTO.getName() == null || "".equals(registerDTO.getName()))
-//            return Resp.fail(ErrorCodeEnum.USER_NAME_EMPTY);
-//        //姓名格式不合法
-//        if (registerDTO.getName().length() < 2 || registerDTO.getName().length() > 16)
-//            return Resp.fail(ErrorCodeEnum.USER_NAME_ILLEGAL);
-//        Users users = usersService.getByUsername(registerDTO.getUsername());
-//        //用户已经存在
-//        if (users != null)
-//            return Resp.fail(ErrorCodeEnum.USER_USER_EXIST);
+        redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
+        //key为空
+        if (registerDTO.getCaptchaKey() == null || "".equals(registerDTO.getCaptchaKey()))
+            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
+        String key = "Code:" + registerDTO.getCaptchaKey();
+        boolean hasKey = redisTemplate.hasKey(key);
+        //key在redis中不存在
+        if (!hasKey)
+            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
+        //value为空
+        if (registerDTO.getCaptchaValue() == null || "".equals(registerDTO.getCaptchaValue()))
+            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EMPTY);
+        //根据key获取redis中的验证码
+        String img = redisTemplate.opsForValue().get(key).toString();
+        redisTemplate.delete(key);
+        //验证码不匹配
+        if (!img.equals(registerDTO.getCaptchaValue().toLowerCase()))
+            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_ERROR);
+        //用户名为空
+        if (registerDTO.getUsername() == null || "".equals(registerDTO.getUsername()))
+            return Resp.fail(ErrorCodeEnum.USER_USERNAME_EMPTY);
+        //正则校验用户名为6-20位数字字母组合
+        String rexUsername = "^([A-Z]|[a-z]|[0-9]){6,20}$";
+        boolean isUsernameMatch = Pattern.matches(rexUsername, registerDTO.getUsername());
+        //用户名格式不合法
+        if (!isUsernameMatch)
+            return Resp.fail(ErrorCodeEnum.USER_USERNAME_ILLEGAL);
+        //密码为空
+        if (registerDTO.getPassword() == null || "".equals(registerDTO.getPassword()))
+            return Resp.fail(ErrorCodeEnum.USER_PASSWORD_EMPTY);
+        //正则校验密码为6-20位数字字母特殊字符组合
+        String rexPassword = "^([A-Z]|[a-z]|[0-9]|[`=\\[\\]\\-;,./~!@#$%^*()_+}{:?]){6,20}$";
+        boolean isPasswordMatch = Pattern.matches(rexPassword, registerDTO.getPassword());
+        //密码格式不合法
+        if (!isPasswordMatch)
+            return Resp.fail(ErrorCodeEnum.USER_PASSWORD_ILLEGAL);
+        //重复密码为空
+        if (registerDTO.getRePassword() == null || "".equals(registerDTO.getRePassword()))
+            return Resp.fail(ErrorCodeEnum.USER_REPASSWORD_EMPTY);
+        //两次密码输入不一致
+        if (!registerDTO.getRePassword().equals(registerDTO.getPassword()))
+            return Resp.fail(ErrorCodeEnum.USER_INCONSISTENT_PASSWORDS);
+        //姓名为空
+        if (registerDTO.getName() == null || "".equals(registerDTO.getName()))
+            return Resp.fail(ErrorCodeEnum.USER_NAME_EMPTY);
+        //姓名格式不合法
+        if (registerDTO.getName().length() < 2 || registerDTO.getName().length() > 16)
+            return Resp.fail(ErrorCodeEnum.USER_NAME_ILLEGAL);
+        Users users = usersService.getByUsername(registerDTO.getUsername());
+        //用户已经存在
+        if (users != null)
+            return Resp.fail(ErrorCodeEnum.USER_USER_EXIST);
         String password = bCryptPasswordEncoder.encode(registerDTO.getPassword());
         LocalDateTime localDateTime = LocalDateTime
                 .parse(LocalDateTime.now().format(DATE_TIME_FORMATTER), DATE_TIME_FORMATTER);
@@ -180,20 +180,20 @@ public class UserController {
         redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
         if (loginDTO.getCaptchaKey() == null || "".equals(loginDTO.getCaptchaKey()))
             return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
-//        String key = "Code:" + loginDTO.getCaptchaKey();
-//        boolean hasKey = redisTemplate.hasKey(key);
-//        if (!hasKey)
-//            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
-//        if (loginDTO.getCaptchaValue() == null || "".equals(loginDTO.getCaptchaValue()))
-//            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EMPTY);
-//        String img = redisTemplate.opsForValue().get(key).toString();
-//        redisTemplate.delete(key);
-//        if (!img.equals(loginDTO.getCaptchaValue().toLowerCase()))
-//            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_ERROR);
-//        if (loginDTO.getUsername() == null || "".equals(loginDTO.getUsername()))
-//            return Resp.fail(ErrorCodeEnum.USER_USERNAME_EMPTY);
-//        if (loginDTO.getPassword() == null || "".equals(loginDTO.getPassword()))
-//            return Resp.fail(ErrorCodeEnum.USER_PASSWORD_EMPTY);
+        String key = "Code:" + loginDTO.getCaptchaKey();
+        boolean hasKey = redisTemplate.hasKey(key);
+        if (!hasKey)
+            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EXPIRED);
+        if (loginDTO.getCaptchaValue() == null || "".equals(loginDTO.getCaptchaValue()))
+            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_EMPTY);
+        String img = redisTemplate.opsForValue().get(key).toString();
+        redisTemplate.delete(key);
+        if (!img.equals(loginDTO.getCaptchaValue().toLowerCase()))
+            return Resp.fail(ErrorCodeEnum.USER_VERIFICATION_ERROR);
+        if (loginDTO.getUsername() == null || "".equals(loginDTO.getUsername()))
+            return Resp.fail(ErrorCodeEnum.USER_USERNAME_EMPTY);
+        if (loginDTO.getPassword() == null || "".equals(loginDTO.getPassword()))
+            return Resp.fail(ErrorCodeEnum.USER_PASSWORD_EMPTY);
         Users users = usersService.getByUsername(loginDTO.getUsername());
         if (users == null)
             return Resp.fail(ErrorCodeEnum.USER_USERINFO_ERROR);
