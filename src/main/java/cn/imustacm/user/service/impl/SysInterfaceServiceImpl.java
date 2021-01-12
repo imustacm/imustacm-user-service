@@ -32,7 +32,29 @@ public class SysInterfaceServiceImpl extends ServiceImpl<SysInterfaceMapper, Sys
         Page<SysInterface> page = (Page<SysInterface>) page(new Page<>(pageParam.getPageIndex(), pageParam.getPageSize()), queryWrapper);
         List<SysInterface> records = page.getRecords();
         // 转化DTO对象 重新封装为Page对象
-        List<InterfaceDTO> dtoList = records
+        List<InterfaceDTO> dtoList = buildDTOList(records);
+        Page<InterfaceDTO> result = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
+        result.setRecords(dtoList);
+        return result;
+    }
+
+    @Override
+    public List<InterfaceDTO> getList(List<Integer> interfaceIdList) {
+        LambdaQueryWrapper<SysInterface> queryWrapper = new QueryWrapper<SysInterface>().lambda()
+                .in(SysInterface::getId, interfaceIdList);
+        List<SysInterface> list = list(queryWrapper);
+
+        return buildDTOList(list);
+    }
+
+    /**
+     * 转DTO
+     *
+     * @param interfaceList
+     * @return
+     */
+    private List<InterfaceDTO> buildDTOList(List<SysInterface> interfaceList) {
+        return interfaceList
                 .stream()
                 .map(e -> InterfaceDTO
                         .builder()
@@ -43,9 +65,5 @@ public class SysInterfaceServiceImpl extends ServiceImpl<SysInterfaceMapper, Sys
                         .visible(e.getVisible())
                         .build())
                 .collect(Collectors.toList());
-
-        Page<InterfaceDTO> result = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        result.setRecords(dtoList);
-        return result;
     }
 }

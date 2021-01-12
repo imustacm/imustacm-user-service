@@ -4,21 +4,14 @@ import cn.imustacm.common.consts.GlobalConst;
 import cn.imustacm.common.domain.Resp;
 import cn.imustacm.common.enums.ErrorCodeEnum;
 import cn.imustacm.common.utils.JwtUtils;
-import cn.imustacm.user.dto.BindEmailDTO;
-import cn.imustacm.user.dto.LoginDTO;
-import cn.imustacm.user.dto.RegisterDTO;
-import cn.imustacm.user.dto.TokenDTO;
+import cn.imustacm.user.dto.*;
 import cn.imustacm.user.model.LoginLog;
 import cn.imustacm.user.model.Option;
 import cn.imustacm.user.model.Users;
-import cn.imustacm.user.service.LoginLogService;
-import cn.imustacm.user.service.OptionService;
-import cn.imustacm.user.service.UsersService;
+import cn.imustacm.user.service.*;
 import cn.imustacm.user.utils.EmailUtils;
 import cn.imustacm.common.utils.RedisUtils;
 import com.alibaba.fastjson.JSONObject;
-import com.auth0.jwt.interfaces.Claim;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,10 +24,13 @@ import org.springframework.web.bind.annotation.*;
 import javax.mail.MessagingException;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static cn.imustacm.common.consts.DatePatternConst.DATE_TIME_FORMATTER;
 
@@ -76,6 +72,9 @@ public class UserController {
 
     @Value("${jwt.prefix}")
     private String prefix;
+
+    @Autowired
+    private SysUserPermissionService userPermissionService;
 
     @Autowired
     private JwtUtils jwtUtils;
@@ -218,12 +217,7 @@ public class UserController {
             return Resp.fail(ErrorCodeEnum.USER_USERINFO_ERROR);
         }
         //获取token
-        String token = null;
-        try {
-            token = jwtUtils.createToken(String.valueOf(id));
-        } catch (Exception e) {
-            //log.error("生成token错误 e:{}", e);
-        }
+        String token = generateToken(id);
         LoginLog loginLog = LoginLog.builder()
                 .userid(id)
                 .createtime(localDateTime)
@@ -234,7 +228,7 @@ public class UserController {
         if (!saveFlag)
             return Resp.fail(ErrorCodeEnum.FAIL);
             redisTemplate.opsForValue().set("Login:" + token, id);
-        return Resp.ok(TokenDTO.builder().accessToken(prefix + token).build());
+        return Resp.ok(LoginResultDTO.builder().accessToken(prefix + token).build());
     }
 
 
@@ -247,12 +241,11 @@ public class UserController {
     public Resp bindEmail(@RequestHeader(GlobalConst.JWT_HEADER) String header,
                           @RequestBody BindEmailDTO bindEmailDTO) {
         try {
-            String req = header.replaceAll(prefix, "");
-            Map<String, Claim> map = jwtUtils.verifyToken(req);
+            String token = header.replaceAll(prefix, "");
+            String userId = jwtUtils.getUserId(token);
             String now = LocalDateTime.now().format(DATE_TIME_FORMATTER);
             LocalDateTime localDateTime = LocalDateTime.parse(now, DATE_TIME_FORMATTER);
-            int id = map.get("id").asInt();
-            Users users = usersService.getById(id);
+            Users users = usersService.getById(userId);
             if (users == null)
                 return Resp.fail(ErrorCodeEnum.FAIL);
             LocalDateTime time = users.getEmaicltime();
@@ -272,7 +265,7 @@ public class UserController {
                 return Resp.fail(ErrorCodeEnum.USER_EMAIL_ILLEGAL);
             String uuid = UUID.randomUUID().toString().replaceAll("-", "");
             redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
-            redisTemplate.opsForValue().set("Email:" + uuid, id, 300, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set("Email:" + uuid, userId, 300, TimeUnit.SECONDS);
             Option option = optionService.getByKey("mail");
             JSONObject value = JSONObject.parseObject(option.getValue());
             String weburl = value.getString("weburl");
@@ -290,7 +283,7 @@ public class UserController {
             emailUtils.sendEmail(email, "IMUSTACM 邮箱验证", context);
             //更新数据库
             Users user = Users.builder()
-                    .id(id)
+                    .id(Integer.parseInt(userId))
                     .email(email)
                     .emaicltime(localDateTime)
                     .emailflag(false)
@@ -338,4 +331,31 @@ public class UserController {
         return Resp.ok();
     }
 
+    /**
+     * test
+     *
+     * @return
+     */
+    @GetMapping("/test")
+    public Resp test() {
+
+        return Resp.ok();
+    }
+
+
+
+    /**
+     * 生成token
+     *
+     * @param userId
+     * @return
+     */
+    private String generateToken(Integer userId) {
+        Map<String, Object> map = new HashMap<>();
+        List<PermissionDTO> permissionList = userPermissionService.getPermissionList(userId);
+        List<String> permissionNameList = permissionList.stream().map(PermissionDTO::getPermissionName).collect(Collectors.toList());
+        String permissionNameListStr = StringUtils.join(permissionNameList, ",");
+            map.put(GlobalConst.PERMISSION_NAME_LIST, permissionNameListStr);
+        return jwtUtils.createToken(userId.toString(), map);
+    }
 }
