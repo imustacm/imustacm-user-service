@@ -24,10 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.mail.MessagingException;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -332,19 +329,6 @@ public class UserController {
     }
 
     /**
-     * test
-     *
-     * @return
-     */
-    @GetMapping("/test")
-    public Resp test() {
-
-        return Resp.ok();
-    }
-
-
-
-    /**
      * 生成token
      *
      * @param userId
@@ -357,5 +341,36 @@ public class UserController {
         String permissionNameListStr = StringUtils.join(permissionNameList, ",");
             map.put(GlobalConst.PERMISSION_NAME_LIST, permissionNameListStr);
         return jwtUtils.createToken(userId.toString(), map);
+    }
+
+    /**
+     * 获取用户登录后基本信息
+     *
+     * @return
+     */
+    @PostMapping("/getLoginInfo")
+    public Resp getLoginInfo(@RequestBody LoginResultDTO loginResultDTO) {
+        redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
+        String token = loginResultDTO.getAccessToken();
+        if (token == null || "".equals(token))
+            return Resp.ok();
+        String key = "Login:" + token.split(prefix)[1];
+        boolean hasKey = redisTemplate.hasKey(key);
+        if (!hasKey)
+            return Resp.ok();
+        Integer userId = Integer.valueOf(redisTemplate.opsForValue().get(key).toString());
+        Users users = usersService.getById(userId);
+        if (users == null)
+            return Resp.fail(ErrorCodeEnum.SERVER_ERR);
+        ArrayList<String> per = new ArrayList<>();
+        List<PermissionDTO> permissionDTOS = userPermissionService.getPermissionList(userId);
+        if (permissionDTOS.size() > 0) {
+            for (PermissionDTO perDTO : permissionDTOS) {
+                per.add(perDTO.getPermissionName());
+            }
+        } else
+            per.add("");
+        String[] permissions = (String[])per.toArray(new String[per.size()]);
+        return Resp.ok(LoginInfoDTO.builder().avatar(users.getAvatar()).username(users.getUsername()).permissions(permissions).build());
     }
 }

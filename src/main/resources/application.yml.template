@@ -20,13 +20,17 @@ spring:
     host: [host]
     port: [port]
     password: [password]
-    timeout: 30s
+    timeout: 10000
     jedis:
       pool:
-        max-wait: 30s
-        max-active: 1
-        max-idle: 1
-        min-idle: 1
+        max-wait: -1
+        max-active: 300
+        max-idle: 32
+        min-idle: 0
+
+ribbon:
+  ReadTimeout: 50000
+  ConnectTimeout: 10000
 
 mybatis-plus:
   global-config:
@@ -35,11 +39,11 @@ mybatis-plus:
 
 jwt:
   secret-key: [secret-key]
-  expire-time: 60000
+  expire-time: 6000000
   header: Authorization
-  prefix: 'Bearer '
+  prefix: 'Bearer'
 
 eureka:
   client:
     service-url:
-     defaultZone: http://${spring.security.user.name}:${spring.security.user.password}@localhost:6868/eureka
+     defaultZone: http://${spring.security.user.name}:${spring.security.user.password}@backend-eureka:6868/eureka
