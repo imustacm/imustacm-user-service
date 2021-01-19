@@ -67,9 +67,6 @@ public class UserController {
     @Value("${jwt.header}")
     private String header;
 
-    @Value("${jwt.prefix}")
-    private String prefix;
-
     @Autowired
     private SysUserPermissionService userPermissionService;
 
@@ -225,7 +222,7 @@ public class UserController {
         if (!saveFlag)
             return Resp.fail(ErrorCodeEnum.FAIL);
             redisTemplate.opsForValue().set("Login:" + token, id);
-        return Resp.ok(LoginResultDTO.builder().accessToken(prefix + token).build());
+        return Resp.ok(LoginResultDTO.builder().accessToken(token).build());
     }
 
 
@@ -235,11 +232,9 @@ public class UserController {
      * @return
      */
     @PostMapping("/bindEmail")
-    public Resp bindEmail(@RequestHeader(GlobalConst.JWT_HEADER) String header,
-                          @RequestBody BindEmailDTO bindEmailDTO) {
+    public Resp bindEmail(@RequestBody BindEmailDTO bindEmailDTO,
+                          @RequestHeader(value = GlobalConst.USER_ID_HEADER, required = false) Integer userId) {
         try {
-            String token = header.replaceAll(prefix, "");
-            String userId = jwtUtils.getUserId(token);
             String now = LocalDateTime.now().format(DATE_TIME_FORMATTER);
             LocalDateTime localDateTime = LocalDateTime.parse(now, DATE_TIME_FORMATTER);
             Users users = usersService.getById(userId);
@@ -280,7 +275,7 @@ public class UserController {
             emailUtils.sendEmail(email, "IMUSTACM 邮箱验证", context);
             //更新数据库
             Users user = Users.builder()
-                    .id(Integer.parseInt(userId))
+                    .id(userId)
                     .email(email)
                     .emaicltime(localDateTime)
                     .emailflag(false)
@@ -349,28 +344,51 @@ public class UserController {
      * @return
      */
     @PostMapping("/getLoginInfo")
-    public Resp getLoginInfo(@RequestBody LoginResultDTO loginResultDTO) {
+    public Resp getLoginInfo(@RequestHeader(GlobalConst.JWT_HEADER) String token) {
         redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
-        String token = loginResultDTO.getAccessToken();
-        if (token == null || "".equals(token))
-            return Resp.ok();
-        String key = "Login:" + token.split(prefix)[1];
+        ArrayList<String> per = new ArrayList<>();
+        String[] permissions;
+        if (token == null || "".equals(token)) {
+            per.add("");
+            permissions = per.toArray(new String[per.size()]);
+            return Resp.ok(LoginInfoDTO.builder().permissions(permissions).build());
+        }
+        String key = "Login:" + token;
         boolean hasKey = redisTemplate.hasKey(key);
-        if (!hasKey)
-            return Resp.ok();
+        if (!hasKey) {
+            per.add("");
+            permissions = per.toArray(new String[per.size()]);
+            return Resp.ok(LoginInfoDTO.builder().permissions(permissions).build());
+        }
         Integer userId = Integer.valueOf(redisTemplate.opsForValue().get(key).toString());
         Users users = usersService.getById(userId);
         if (users == null)
             return Resp.fail(ErrorCodeEnum.SERVER_ERR);
-        ArrayList<String> per = new ArrayList<>();
         List<PermissionDTO> permissionDTOS = userPermissionService.getPermissionList(userId);
-        if (permissionDTOS.size() > 0) {
-            for (PermissionDTO perDTO : permissionDTOS) {
-                per.add(perDTO.getPermissionName());
-            }
-        } else
-            per.add("");
-        String[] permissions = (String[])per.toArray(new String[per.size()]);
+        per.add("USER");
+        for (PermissionDTO perDTO : permissionDTOS) {
+            per.add(perDTO.getPermissionName());
+        }
+        permissions = per.toArray(new String[per.size()]);
         return Resp.ok(LoginInfoDTO.builder().avatar(users.getAvatar()).username(users.getUsername()).permissions(permissions).build());
     }
+
+    /**
+     * 退出登录
+     *
+     * @return
+     */
+    @PostMapping("/logout")
+    public Resp logout(@RequestHeader(GlobalConst.JWT_HEADER) String token) {
+        redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
+        if (token == null || "".equals(token))
+            return Resp.ok();
+        String key = "Login:" + token;
+        boolean hasKey = redisTemplate.hasKey(key);
+        if (!hasKey)
+            return Resp.ok();
+        redisTemplate.delete(key);
+        return Resp.ok();
+    }
+
 }
