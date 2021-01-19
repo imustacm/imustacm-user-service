@@ -38,7 +38,6 @@ import static cn.imustacm.common.consts.DatePatternConst.DATE_TIME_FORMATTER;
  * @date 2019/08/18
  */
 @RestController
-@CrossOrigin
 @RequestMapping("/user")
 public class UserController {
 
