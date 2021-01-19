@@ -344,32 +344,26 @@ public class UserController {
      * @return
      */
     @PostMapping("/getLoginInfo")
-    public Resp getLoginInfo(@RequestHeader(GlobalConst.JWT_HEADER) String token) {
+    public Resp getLoginInfo(@RequestBody LoginResultDTO loginResultDTO) {
         redisTemplate = RedisUtils.redisTemplate(redisConnectionFactory);
-        ArrayList<String> per = new ArrayList<>();
-        String[] permissions;
-        if (token == null || "".equals(token)) {
-            per.add("");
-            permissions = per.toArray(new String[per.size()]);
-            return Resp.ok(LoginInfoDTO.builder().permissions(permissions).build());
-        }
+        String token = loginResultDTO.getAccessToken();
+        if (token == null || "".equals(token))
+            return Resp.ok();
         String key = "Login:" + token;
         boolean hasKey = redisTemplate.hasKey(key);
-        if (!hasKey) {
-            per.add("");
-            permissions = per.toArray(new String[per.size()]);
-            return Resp.ok(LoginInfoDTO.builder().permissions(permissions).build());
-        }
+        if (!hasKey)
+            return Resp.ok();
         Integer userId = Integer.valueOf(redisTemplate.opsForValue().get(key).toString());
         Users users = usersService.getById(userId);
         if (users == null)
             return Resp.fail(ErrorCodeEnum.SERVER_ERR);
+        ArrayList<String> per = new ArrayList<>();
         List<PermissionDTO> permissionDTOS = userPermissionService.getPermissionList(userId);
         per.add("USER");
         for (PermissionDTO perDTO : permissionDTOS) {
             per.add(perDTO.getPermissionName());
         }
-        permissions = per.toArray(new String[per.size()]);
+        String[] permissions = (String[])per.toArray(new String[per.size()]);
         return Resp.ok(LoginInfoDTO.builder().avatar(users.getAvatar()).username(users.getUsername()).permissions(permissions).build());
     }
 
