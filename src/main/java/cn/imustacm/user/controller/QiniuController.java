@@ -7,8 +7,6 @@ import cn.imustacm.user.service.OptionService;
 import com.alibaba.fastjson.JSONObject;
 import com.qiniu.util.Auth;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
  * @date 2019/08/18
  */
 @RestController
-@CrossOrigin
 @RequestMapping("/qiniu")
 public class QiniuController {
 
