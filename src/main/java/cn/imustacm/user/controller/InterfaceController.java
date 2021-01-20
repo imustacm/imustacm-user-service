@@ -27,7 +27,7 @@ public class InterfaceController {
 
 
     /**
-     * 新增或者删除接口
+     * 新增或修改接口
      *
      * @param interfaceDTO
      * @return
@@ -79,6 +79,5 @@ public class InterfaceController {
         Page<InterfaceDTO> page = sysInterfaceService.getPage(pageParam);
         return Resp.ok(page);
     }
-
 
 }
