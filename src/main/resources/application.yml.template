@@ -39,7 +39,7 @@ mybatis-plus:
 
 jwt:
   secret-key: [secret-key]
-  expire-time: 6000000
+  expire-time: 604800000
   header: accessToken
 
 eureka:

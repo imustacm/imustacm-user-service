@@ -28,7 +28,7 @@ public class SysInterfaceServiceImpl extends ServiceImpl<SysInterfaceMapper, Sys
 
     @Override
     public Page<InterfaceDTO> getPage(PageParam pageParam) {
-        LambdaQueryWrapper<SysInterface> queryWrapper = new QueryWrapper<SysInterface>().lambda();
+        LambdaQueryWrapper<SysInterface> queryWrapper = new QueryWrapper<SysInterface>().lambda().orderByAsc(SysInterface::getId);
         Page<SysInterface> page = (Page<SysInterface>) page(new Page<>(pageParam.getPageIndex(), pageParam.getPageSize()), queryWrapper);
         List<SysInterface> records = page.getRecords();
         // 转化DTO对象 重新封装为Page对象
