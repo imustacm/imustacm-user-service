@@ -220,7 +220,7 @@ public class UserController {
         boolean saveFlag = loginLogService.save(loginLog);
         if (!saveFlag)
             return Resp.fail(ErrorCodeEnum.FAIL);
-            redisTemplate.opsForValue().set("Login:" + token, id, Long.parseLong(jwtExpireTime) / 1000L);
+        redisTemplate.opsForValue().set("Login:" + token, id, Long.parseLong(jwtExpireTime) / 1000L, TimeUnit.SECONDS);
         return Resp.ok(LoginResultDTO.builder().accessToken(token).build());
     }
 
